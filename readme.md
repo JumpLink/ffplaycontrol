@@ -1,40 +1,36 @@
-omxcontrol
+ffplaycontrol
 ==========
 
-Nodejs module to control omxplayer. Specifically written for the raspberry pi
+Nodejs module to control ffplay.
 
 Requirements
 ------------
 
-* omxplayer (installed by default on the raspberry pi raspian image)
+* ffplay (included in [ffmpeg](http://www.ffmpeg.org/))
 * nodejs (`apt-get install nodejs`)
 
 Install
 -------
 
-    npm install omxcontrol
+    npm install ffplaycontrol
 
 Usage
 -----
 
 Basic usage
     
-    omx = require('omxcontrol');
+    ffplay = require('ffplaycontrol');
 
-    omx.start(filename);
+    ffplay.start(filename);
 
-    omx.pause();
-    
-    omx.volume_up();
-
-    omx.volume_down();
+    ffplay.pause();
 
     omx.quit();
 
-You actually might not want to pass the real file name to the http api, probably to simplify things, but in my case, omxplayer needs a specific url to play youtube video. For this usecase, `omx()` can be passed a mapping function to map the filename to something else. Calling the provided start method is required to actually start the video. Your logic can be async and even choose not to start things:
+`ffplay()` can be passed a mapping function to map the filename to something else. Calling the provided start method is required to actually start the video. Your logic can be async and even choose not to start things:
 
-    omx = require('omxcontrol');
-    omx(function(fn,start) {
+    ffplay = require('ffplaycontrol');
+    ffplay(function(fn,start) {
         //do something special
         start(fn);
     });
