@@ -3,26 +3,26 @@ var exec = require('child_process').exec;
 var pipe = false;
 var map = false;
 
-function omx(mapper) {
+function ffplay(mapper) {
     map = mapper;
 }
 
-omx.stop = function(cb) {
+ffplay.stop = function(cb) {
     if (!pipe) {
         cb();
         return;
     }
-    console.info('killing omxplayer..');
+    console.info('killing ffplay..');
     exec('rm -f '+pipe, function (error, stdout, stderr) {
         if (error !== null) console.error('rm exec error: ' + error);
         pipe = false;
-        exec('killall omxplayer.bin', cb);
+        exec('killall ffplay', cb);
     });
 };
 
-omx.start = function(fn) {
+ffplay.start = function(fn) {
     if (!pipe) {
-        pipe = '/tmp/omxcontrol';
+        pipe = '/tmp/ffplaycontrol';
         exec('rm -f '+pipe, function (error, stdout, stderr) {
             if (error !== null) {
                 console.error('rm exec error: ' + error);
@@ -42,52 +42,47 @@ omx.start = function(fn) {
         });
     } else {
         console.info("Pipe already exists! Restarting...");
-        omx.stop(function () {
-            return omx.start(fn);
+        ffplay.stop(function () {
+            return ffplay.start(fn);
         });
     }
 
     function cb(fn) {
         console.info(fn);
-        exec('omxplayer -o hdmi "'+fn+'" < '+pipe, function (error, stdout, stderr) {
+        exec('ffplay -fs "'+fn+'" < '+pipe, function (error, stdout, stderr) {
             if (error !== null) {
-              console.error('omxplayer exec error: ' + error);
+              console.error('ffplay exec error: ' + error);
             }
         });
-        omx.sendKey('.') // play
+        ffplay.sendKey('.') // play
     }
 };
 
-omx.sendKey = function(key) {
+ffplay.sendKey = function(key) {
     if (!pipe) return;
     exec('echo -n '+key+' > '+pipe);
 };
 
-omx.mapKey = function(command,key,then) {
-    omx[command] = function() {
-        omx.sendKey(key);
+ffplay.mapKey = function(command,key,then) {
+    ffplay[command] = function() {
+        ffplay.sendKey(key);
         if (then) {
             then();
         }
     };
 };
 
-omx.mapKey('volume_up', '+');
-omx.mapKey('volume_down', '-');
-omx.mapKey('pause','p');
-omx.mapKey('quit','q',function() {
-    omx.stop();
+ffplay.mapKey('pause','p');
+ffplay.mapKey('quit','q',function() {
+    ffplay.stop();
 });
-omx.mapKey('play','.');
-omx.mapKey('forward',"\x5b\x43");
-omx.mapKey('backward',"\x5b\x44");
-omx.mapKey('next_subtitle', 'm');
-omx.mapKey('previous_subtitle', 'n');
-omx.mapKey('next_chapter', 'o');
-omx.mapKey('previous_chapter', 'i');
-omx.mapKey('next_audio', 'k');
-omx.mapKey('previous_audio', 'j');
-omx.mapKey('increase_speed', '1');
-omx.mapKey('decrease_speed', '2');
+ffplay.mapKey('play','.');
+ffplay.mapKey('forward',"\x5b\x43");
+ffplay.mapKey('backward',"\x5b\x44");
+ffplay.mapKey('next_subtitle', 't');
+ffplay.mapKey('next_audio', 'a');
+ffplay.mapKey('next_video', 'v');
+ffplay.mapKey('full_screen', 'f');
 
-module.exports = omx;
+
+module.exports = ffplay;
