@@ -1,7 +1,7 @@
 ffplaycontrol
 ==========
 
-Nodejs module to control ffplay.
+Nodejs module to control [ffplay](https://www.ffmpeg.org/ffplay.html), like [omxcontrol](https://github.com/dplesca/omxcontrol) for omxplayer.
 
 Requirements
 ------------
@@ -25,7 +25,7 @@ Basic usage
 
     ffplay.pause();
 
-    omx.quit();
+    ffplay.quit();
 
 `ffplay()` can be passed a mapping function to map the filename to something else. Calling the provided start method is required to actually start the video. Your logic can be async and even choose not to start things:
 
