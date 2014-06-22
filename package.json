@@ -16,7 +16,7 @@
     "middleware",
     "ffplay",
     "video",
-    "player",
+    "player"
   ],
   "author": ["rikkert@rikkertkoppes.com"],
   "license": "BSD"
