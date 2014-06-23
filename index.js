@@ -19,7 +19,7 @@ module.exports = function Media(filename) {
 
 util.inherits(module.exports, events.EventEmitter);
 
-module.exports.prototype.play = function (options) {
+module.exports.prototype.start = function (options) {
     this._stop();
     this.stopped = false;
     var args = [this.filename];
@@ -35,6 +35,8 @@ module.exports.prototype.play = function (options) {
             this.emit('complete');
         }
     }.bind(this));
+    
+    this.emit('start');
 };
 
 module.exports.prototype._stop = function () {
@@ -61,7 +63,7 @@ module.exports.prototype.pause = function () {
 };
 module.exports.prototype._resume = function () {
     this.paused = false;
-    if (this.stopped) return this.play();
+    if (this.stopped) return this.start();
     if(this.process){
         this.process.kill('SIGCONT');
     }
