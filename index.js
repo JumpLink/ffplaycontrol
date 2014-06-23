@@ -20,6 +20,7 @@ module.exports = function Media(filename) {
 util.inherits(module.exports, events.EventEmitter);
 
 module.exports.prototype.play = function (options) {
+    this.stop();
     this.stopped = false;
     var args = [this.filename];
 
@@ -36,32 +37,41 @@ module.exports.prototype.play = function (options) {
     }.bind(this));
 };
 
-module.exports.prototype.stop = function () {
+module.exports.prototype._stop = function () {
     this.stopped = true;
     if(this.process){
         this.process.kill('SIGTERM');
     }
     this.emit('stop');
 };
-module.exports.prototype.toggle_pause = function () {
-    if(this.paused)
-        this.resume();
-    else
-       this.pause(); 
+module.exports.prototype.stop = function () {
+    this._resume();
+    this._stop();
+    this.emit('stop');
 };
-module.exports.prototype.pause = function () {
+module.exports.prototype._pause = function () {
     this.paused = true;
     if (this.stopped) return;
     if(this.process){
         this.process.kill('SIGSTOP');
     }
+};
+module.exports.prototype.pause = function () {
+    this._pause();
     this.emit('pause');
 };
-module.exports.prototype.resume = function () {
+module.exports.prototype._resume = function () {
     this.paused = false;
     if (this.stopped) return this.play();
     if(this.process){
         this.process.kill('SIGCONT');
     }
+};
+module.exports.prototype.resume = function () {
+    this._resume();
     this.emit('resume');
+};
+module.exports.prototype.toggle_pause = function () {
+    if(this.paused) this.resume();
+    else this.pause(); 
 };
