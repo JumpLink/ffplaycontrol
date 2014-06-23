@@ -7,34 +7,41 @@ function ffplay(mapper) {
     map = mapper;
 }
 
+ffplay.remove_pipe = function (cb) {
+    exec('rm -f '+pipe, function (error, stdout, stderr) {
+        if (error !== null) cb('rm -f '+pipe+' exec error: ' + error);
+        pipe = false;
+        cb(null);
+    });
+}
+
 ffplay.stop = function(cb) {
     if (!pipe) {
         cb();
         return;
     }
-    console.info('killing ffplay..');
-    exec('rm -f '+pipe, function (error, stdout, stderr) {
-        if (error !== null) console.error('rm exec error: ' + error);
-        pipe = false;
+    ffplay.remove_pipe(function (error) {
         exec('killall ffplay', cb);
     });
 };
 
-ffplay.start = function(fn) {
+ffplay.start = function(filename, exit) {
+    var exit = exit;
     if (!pipe) {
         pipe = '/tmp/ffplaycontrol';
-        exec('rm -f '+pipe, function (error, stdout, stderr) {
+        ffplay.remove_pipe(function (error) {
             if (error !== null) {
-                console.error('rm exec error: ' + error);
+                player_stopped(error)
             } else {
+                pipe = '/tmp/ffplaycontrol';
                 exec('mkfifo '+pipe, function (error, stdout, stderr) {
                     if (error !== null) {
-                        console.error('mkfifo exec error: ' + error);
+                        player_stopped('mkfifo exec error: ' + error)
                     } else {
                         if (map) {
-                            map(fn,cb);
+                            map(filename, start_player);
                         } else {
-                            cb(fn);
+                            start_player(filename);
                         }
                     }
                 });
@@ -43,18 +50,28 @@ ffplay.start = function(fn) {
     } else {
         console.info("Pipe already exists! Restarting...");
         ffplay.stop(function () {
-            return ffplay.start(fn);
+            return ffplay.start(filename);
         });
     }
 
-    function cb(fn) {
-        console.info(fn);
-        exec('ffplay -fs "'+fn+'" < '+pipe, function (error, stdout, stderr) {
+    function player_stopped(error) {
+        if(error != null) console.error(error); 
+        ffplay.stop(function(){
+            if (typeof(exit) == 'function') return exit(error);
+            else console.error('exit function is not defined');
+        })
+    }
+
+    function start_player(filename) {
+        exec('ffplay -fs -autoexit "'+filename+'" < '+pipe, function (error, stdout, stderr) {
             if (error !== null) {
-              console.error('ffplay exec error: ' + error);
+                player_stopped('ffplay exec error: ' + error);
+            } else {
+                player_stopped(null);
             }
+            
         });
-        ffplay.sendKey('.') // play
+        ffplay.play();
     }
 };
 
