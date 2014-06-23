@@ -1,105 +1,67 @@
-var exec = require('child_process').exec;
+/**
+ * node-simple-ffplay fork of node-simple-mplayer
+ * Javascript simple mplayer wrapper for Node.js
+ *
+ * @author Jonathan Blanchet (@jblanchefr)
+ * Copyright 2012 Jonathan Blanchet @ Lab212.
+ *
+ * MIT License
+ */
 
-var pipe = false;
-var map = false;
+var spawn = require('child_process').spawn,
+    events = require('events'),
+    util = require('util');
 
-function ffplay(mapper) {
-    map = mapper;
-}
-
-ffplay.remove_pipe = function (cb) {
-    exec('rm -f '+pipe, function (error, stdout, stderr) {
-        if (error !== null) cb('rm -f '+pipe+' exec error: ' + error);
-        pipe = false;
-        cb(null);
-    });
-}
-
-ffplay.stop = function(cb) {
-    if (!pipe) {
-        cb();
-        return;
-    }
-    ffplay.remove_pipe(function (error) {
-        exec('killall ffplay', cb);
-    });
+module.exports = function Media(filename) {
+    events.EventEmitter.call(this);
+    this.filename = filename;
 };
 
-ffplay.start = function(filename, exit) {
-    var exit = exit;
-    if (!pipe) {
-        pipe = '/tmp/ffplaycontrol';
-        ffplay.remove_pipe(function (error) {
-            if (error !== null) {
-                player_stopped(error)
-            } else {
-                pipe = '/tmp/ffplaycontrol';
-                exec('mkfifo '+pipe, function (error, stdout, stderr) {
-                    if (error !== null) {
-                        player_stopped('mkfifo exec error: ' + error)
-                    } else {
-                        if (map) {
-                            map(filename, start_player);
-                        } else {
-                            start_player(filename);
-                        }
-                    }
-                });
-            }
-        });
-    } else {
-        console.info("Pipe already exists! Restarting...");
-        ffplay.stop(function () {
-            return ffplay.start(filename);
-        });
-    }
+util.inherits(module.exports, events.EventEmitter);
 
-    function player_stopped(error) {
-        if(error != null) console.error(error); 
-        ffplay.stop(function(){
-            if (typeof(exit) == 'function') return exit(error);
-            else console.error('exit function is not defined');
-        })
-    }
+module.exports.prototype.play = function (options) {
+    this.stopped = false;
+    var args = [this.filename];
 
-    function start_player(filename) {
-        exec('ffplay -fs -autoexit "'+filename+'" < '+pipe, function (error, stdout, stderr) {
-            if (error !== null) {
-                player_stopped('ffplay exec error: ' + error);
-            } else {
-                player_stopped(null);
-            }
-            
-        });
-        ffplay.play();
-    }
-};
-
-ffplay.sendKey = function(key) {
-    if (!pipe) return;
-    exec('echo -n '+key+' > '+pipe);
-};
-
-ffplay.mapKey = function(command,key,then) {
-    ffplay[command] = function() {
-        ffplay.sendKey(key);
-        if (then) {
-            then();
+    for(var prop in options) {
+        if(options.hasOwnProperty(prop)){
+            args.unshift('-'+prop, options[prop] );
         }
-    };
+    }
+    this.process = spawn('ffplay', args);
+    this.process.on('exit', function (code, sig) {
+        if (code !== null && sig === null) {
+            this.emit('complete');
+        }
+    }.bind(this));
 };
 
-ffplay.mapKey('pause','p');
-ffplay.mapKey('quit','q',function() {
-    ffplay.stop();
-});
-ffplay.mapKey('play','.');
-ffplay.mapKey('forward',"\x5b\x43");
-ffplay.mapKey('backward',"\x5b\x44");
-ffplay.mapKey('next_subtitle', 't');
-ffplay.mapKey('next_audio', 'a');
-ffplay.mapKey('next_video', 'v');
-ffplay.mapKey('full_screen', 'f');
-
-
-module.exports = ffplay;
+module.exports.prototype.stop = function () {
+    this.stopped = true;
+    if(this.process){
+        this.process.kill('SIGTERM');
+    }
+    this.emit('stop');
+};
+module.exports.prototype.toggle_pause = function () {
+    if(this.paused)
+        this.resume();
+    else
+       this.pause(); 
+};
+module.exports.prototype.pause = function () {
+    this.paused = true;
+    if (this.stopped) return;
+    if(this.process){
+        this.process.kill('SIGSTOP');
+    }
+    this.emit('pause');
+};
+module.exports.prototype.resume = function () {
+    this.paused = false;
+    if (this.stopped) return this.play();
+    if(this.process){
+        this.process.kill('SIGCONT');
+    }
+    this.emit('resume');
+};
