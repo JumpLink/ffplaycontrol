@@ -20,7 +20,7 @@ module.exports = function Media(filename) {
 util.inherits(module.exports, events.EventEmitter);
 
 module.exports.prototype.play = function (options) {
-    this.stop();
+    this._stop();
     this.stopped = false;
     var args = [this.filename];
 
@@ -42,7 +42,6 @@ module.exports.prototype._stop = function () {
     if(this.process){
         this.process.kill('SIGTERM');
     }
-    this.emit('stop');
 };
 module.exports.prototype.stop = function () {
     this._resume();
