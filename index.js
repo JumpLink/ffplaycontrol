@@ -29,7 +29,7 @@ module.exports.prototype.play = function (options) {
             args.unshift('-'+prop, options[prop] );
         }
     }
-    this.process = spawn('ffplay', args);
+    this.process = spawn('ffplay', args, {stdio: [ 'ignore', 'ignore', 'ignore' ]});
     this.process.on('exit', function (code, sig) {
         if (code !== null && sig === null) {
             this.emit('complete');
