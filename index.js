@@ -12,15 +12,19 @@ var spawn = require('child_process').spawn,
     events = require('events'),
     util = require('util');
 
-module.exports = function Media(filename) {
+module.exports = function Media() {
     events.EventEmitter.call(this);
-    this.filename = filename;
+    // this.filename = filename;
 };
 
 util.inherits(module.exports, events.EventEmitter);
 
-module.exports.prototype.start = function (options) {
-    this._stop();
+
+
+module.exports.prototype.start = function (filename, options) {
+    this.filename = filename;
+    if(!this.stopped)
+        this.stop();
     this.stopped = false;
     var args = [this.filename];
 
@@ -29,14 +33,14 @@ module.exports.prototype.start = function (options) {
             args.unshift('-'+prop, options[prop] );
         }
     }
+    this.emit('start', filename, options); // FIXME
     this.process = spawn('ffplay', args, {stdio: [ 'ignore', 'ignore', 'ignore' ]});
     this.process.on('exit', function (code, sig) {
-        if (code !== null && sig === null) {
-            this.emit('complete');
-        }
-    }.bind(this));
-    
-    this.emit('start');
+        this.emit('complete');
+    });
+    this.process.on('close', function (code, sig) {
+        this.emit('complete');
+    });
 };
 
 module.exports.prototype._stop = function () {
@@ -45,10 +49,11 @@ module.exports.prototype._stop = function () {
         this.process.kill('SIGTERM');
     }
 };
-module.exports.prototype.stop = function () {
+module.exports.prototype.stop = function (next) {
     this._resume();
     this._stop();
     this.emit('stop');
+    if(next) next(); 
 };
 module.exports.prototype._pause = function () {
     this.paused = true;
