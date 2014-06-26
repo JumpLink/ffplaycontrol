@@ -37,10 +37,10 @@ module.exports.prototype.start = function (filename, options) {
     this.process = spawn('ffplay', args, {stdio: [ 'ignore', 'ignore', 'ignore' ]});
     this.process.on('exit', function (code, sig) {
         this.emit('complete');
-    });
+    }.bind(this));
     this.process.on('close', function (code, sig) {
         this.emit('complete');
-    });
+    }.bind(this));
 };
 
 module.exports.prototype._stop = function () {
@@ -54,6 +54,9 @@ module.exports.prototype.stop = function (next) {
     this._stop();
     this.emit('stop');
     if(next) next(); 
+};
+module.exports.prototype.quit = function (next) {
+    this.stop(next);
 };
 module.exports.prototype._pause = function () {
     this.paused = true;
